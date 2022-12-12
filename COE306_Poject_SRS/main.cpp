@@ -7,6 +7,7 @@
 //#include "mbed2/336/platform/mbed_wait_api.h"
 
 #include "ultrasonic.h"
+
            //  c0   c1   c2   c3  r0   r1   r2   r3    
 
 TextLCD lcd(p5, p6, p7, p8, p19, p20);        // 4bit bus: rs, e, d4-d7
@@ -26,7 +27,7 @@ void dist(int distance){
 }
 */
 //ultrasonic mjr(p8, p9, .1, 1, &dist);
-InterruptIn PIR(p21);
+InterruptIn PIR(p22);
 
 int PIR_Detected = 0;
 void irq_handler(void)
@@ -43,18 +44,19 @@ void photocell_handler(void)
 {
     photocell_Detected = 1;
 }
-
+void check(void);
 int main() {  
-    Keypad keypad( p11,p12,p13,p14,p15,p16,p17,p18 );
-    keypad.enablePullUp();
-   // char key = ' ';
-    char password[4] = {'1', '2', '3','4'};
-    char enteredPassword [4] = {} ;
+         LPC_GPIO2->FIODIR |= 1<<5;
+         LPC_GPIO2->FIOPIN = 0<<5;
+   
     PIR.rise(&irq_handler);
     PIR.rise(&irq_handler);
-         lcd.cls();
+
+      /*   lcd.cls();
          lcd.setAddress(0, 0);
          lcd.printf("Activating: ");
+         
+         
          for (int i = 0; i < calibrationTime; i++){
          lcd.setAddress(12, 0);
          lcd.printf(".");
@@ -68,6 +70,9 @@ int main() {
          lcd.setAddress(12, 0);
          lcd.printf("    ");
          }
+*/
+check();
+
          lcd.cls();
          lcd.setAddress(0, 0);
          lcd.printf("Done");
@@ -76,26 +81,34 @@ int main() {
          wait_ms(2000);
          lcd.cls();
    // wait_ms(2000);
+
+   
 system:  
     while(1){
     
-   AnalogIn photocell(p15);
+   AnalogIn photocell(p18);
    double      ph = photocell;
 
      if (PIR_Detected == 1  ) {
          lcd.cls();
          lcd.setAddress(0, 0);
-         lcd.printf("R1: Detected\nph: %f", ph);
+         lcd.printf("R1: Detected");
             PIR_Detected = 0;
-            wait_ms(7500);
-            lcd.cls();
-        } else if ( ph < 1) {
+            
+            wait_ms(3000);
+            check();
+
+                    } 
+    else if ( ph < 0.7) {
          lcd.cls();
          lcd.setAddress(0, 0);
-         lcd.printf("R2: Detected\nph: %f", ph);
+         lcd.printf("R2: Detected");
             PIR_Detected = 0;
-            wait_ms(2000);
-            lcd.cls();
+
+            wait_ms(1500);
+  
+            check();
+
         }
 				
 	else {
@@ -110,4 +123,111 @@ system:
    
 }
 
+}
+void check(){
+    LPC_GPIO2->FIODIR |= 1<<5;
+//  c0   c1   c2   c3  r0   r1   r2   r3    
+    Keypad keypad( p9,p10,p11,p12,p13,p14,p15,p16 );
+       
+    keypad.enablePullUp();
+    char key;
+             
+    char pass[] = {'1','2','3','4'};
+    
+    int number =0;
+    int    p1=0;
+    int    p2=0;
+    int    p3=0;
+    int    p4=0;
+    int    p5=1;
+    
+         lcd.setAddress(0, 1);
+         lcd.printf("Pass:");  
+    while (p5) 
+    {
+
+
+
+       
+       
+         key = keypad.getKey();
+         char k = key;    
+         if(key != KEY_RELEASED)
+         {
+                             
+         lcd.setAddress((number+6), 1);
+         lcd.printf("*"); 
+          number=number+1;
+            LPC_GPIO2->FIOPIN = 1<<5;
+        wait(0.030);
+        LPC_GPIO2->FIOPIN = 0<<5;
+          if(number == 1){
+
+              if(key==pass[0])
+                p1=1;
+                else
+                p1=0;
+              }
+            if(number == 2){
+ 
+              if(key==pass[1])
+                p2=1;
+                else
+                p2=0; 
+              }
+            if(number == 3){
+                
+              if(key==pass[2])
+                p3=1;
+                else
+                p3=0;
+              }
+            if(number == 4){
+              if(key==pass[3])
+                p4=1;
+                else
+                p4=0;
+              }
+ 
+           if(key == 'D'){
+               number=0;
+                if(p1 ==1 &  p2 == 1 & p3 == 1 & p4 == 1){
+                lcd.cls();
+         lcd.setAddress(0, 1);
+         lcd.printf("Password Checked");  
+          LPC_GPIO2->FIOPIN = 1<<5;
+        wait(0.030);
+        LPC_GPIO2->FIOPIN = 0<<5; 
+        wait(0.05);         
+        LPC_GPIO2->FIOPIN = 1<<5;
+        wait(0.030);
+        LPC_GPIO2->FIOPIN = 0<<5;
+         wait(1.5);
+
+                    p1=0;
+                    p2=0;
+                    p3=0;
+                    p4=0;
+                    p5=0;
+                
+               }else{
+                lcd.cls();
+         lcd.setAddress(0, 1);
+         lcd.printf("Password Wrong:(");  
+         wait(1.5);
+               
+               lcd.cls();
+         lcd.setAddress(0, 1);
+         lcd.printf("Pass:");
+         
+                    p1=0;
+                    p2=0;
+                    p3=0;
+                    p4=0;
+               }  
+           }
+             wait(0.6);
+         }
+    }
+  
 }
